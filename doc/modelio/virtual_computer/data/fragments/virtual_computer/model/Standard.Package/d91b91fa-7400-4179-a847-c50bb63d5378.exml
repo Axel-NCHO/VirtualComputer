@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
-<!--GENERATED FILE, PLEASE DO NOT EDIT!!!--><EXT object="virtual_computer" version="4">
+<!--GENERATED FILE, PLEASE DO NOT EDIT!!!--><EXT object="python" version="4">
   <OBJECT>
-    <ID name="virtual_computer" mc="Standard.Package" uid="7f85e331-0809-42ee-823c-06078d0f6cd4"/>
+    <ID name="python" mc="Standard.Package" uid="d91b91fa-7400-4179-a847-c50bb63d5378"/>
     <PID name="virtual_computer" mc="Standard.Project" uid="48697f5e-9cd3-4e0f-9d8b-69e1bd812c57"/>
     <ATTRIBUTES>
       <ATT name="IsInstantiable">false</ATT>
@@ -9,12 +9,12 @@
       <ATT name="IsLeaf">false</ATT>
       <ATT name="IsRoot">false</ATT>
       <ATT name="Visibility">Public</ATT>
-      <ATT name="Name"><![CDATA[virtual_computer]]></ATT>
+      <ATT name="Name"><![CDATA[python]]></ATT>
       <ATT name="status">1970354901745664</ATT>
     </ATTRIBUTES>
     <DEPENDENCIES>
       <COMP relation="OwnedElement">
-        <COMPID name="src" mc="Standard.Package" uid="1e1e6833-02b0-47ee-b406-c5b499e8204c"/>
+        <COMPID name="numpy" mc="Standard.Package" uid="0a24efb0-e9f0-4b86-9773-e04f4b39ecd3"/>
       </COMP>
     </DEPENDENCIES>
   </OBJECT>

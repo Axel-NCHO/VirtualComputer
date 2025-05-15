@@ -1,0 +1,21 @@
+<?xml version="1.0" ?>
+<!--GENERATED FILE, PLEASE DO NOT EDIT!!!--><EXT object="src" version="4">
+  <OBJECT>
+    <ID name="src" mc="Standard.Package" uid="1e1e6833-02b0-47ee-b406-c5b499e8204c"/>
+    <PID name="virtual_computer" mc="Standard.Package" uid="7f85e331-0809-42ee-823c-06078d0f6cd4"/>
+    <ATTRIBUTES>
+      <ATT name="IsInstantiable">false</ATT>
+      <ATT name="IsAbstract">false</ATT>
+      <ATT name="IsLeaf">false</ATT>
+      <ATT name="IsRoot">false</ATT>
+      <ATT name="Visibility">Public</ATT>
+      <ATT name="Name"><![CDATA[src]]></ATT>
+      <ATT name="status">1970354901745664</ATT>
+    </ATTRIBUTES>
+    <DEPENDENCIES>
+      <COMP relation="OwnedElement">
+        <COMPID name="screen" mc="Standard.Package" uid="4727f0ce-c9ce-4987-9488-a6c0951c4964"/>
+      </COMP>
+    </DEPENDENCIES>
+  </OBJECT>
+</EXT>

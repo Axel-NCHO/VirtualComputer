@@ -1,0 +1,21 @@
+<?xml version="1.0" ?>
+<!--GENERATED FILE, PLEASE DO NOT EDIT!!!--><EXT object="numpy" version="4">
+  <OBJECT>
+    <ID name="numpy" mc="Standard.Package" uid="0a24efb0-e9f0-4b86-9773-e04f4b39ecd3"/>
+    <PID name="python" mc="Standard.Package" uid="d91b91fa-7400-4179-a847-c50bb63d5378"/>
+    <ATTRIBUTES>
+      <ATT name="IsInstantiable">false</ATT>
+      <ATT name="IsAbstract">false</ATT>
+      <ATT name="IsLeaf">false</ATT>
+      <ATT name="IsRoot">false</ATT>
+      <ATT name="Visibility">Public</ATT>
+      <ATT name="Name"><![CDATA[numpy]]></ATT>
+      <ATT name="status">1970354901745664</ATT>
+    </ATTRIBUTES>
+    <DEPENDENCIES>
+      <COMP relation="OwnedElement">
+        <COMPID name="ndarray" mc="Standard.Class" uid="25232d92-c5a8-40e2-a64f-23d64e0eebc9"/>
+      </COMP>
+    </DEPENDENCIES>
+  </OBJECT>
+</EXT>

@@ -11,6 +11,7 @@
     <DEPENDENCIES>
       <COMP relation="Model">
         <COMPID name="virtual_computer" mc="Standard.Package" uid="7f85e331-0809-42ee-823c-06078d0f6cd4"/>
+        <COMPID name="python" mc="Standard.Package" uid="d91b91fa-7400-4179-a847-c50bb63d5378"/>
       </COMP>
       <COMP relation="DiagramRoot">
         <COMPID name="virtual_computer" mc="Infrastructure.DiagramSet" uid="5a9d04be-7481-4734-a756-f5e3c3f959bc"/>
