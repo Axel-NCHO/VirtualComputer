@@ -1,0 +1,14 @@
+# python
+*.pyc
+__pycache__/
+.venv/
+.pytest_cache/
+.venv
+
+# modelio
+**/modelio/**/.runtime/
+**/modelio/**/.index/
+**/modelio/**/localmodel/
+**/modelio/**/blobs/
+**/modelio/**/XMI/
+stamp.dat

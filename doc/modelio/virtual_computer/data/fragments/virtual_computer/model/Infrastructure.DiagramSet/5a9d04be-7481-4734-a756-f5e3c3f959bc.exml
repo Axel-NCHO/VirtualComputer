@@ -1,0 +1,12 @@
+<?xml version="1.0" ?>
+<!--GENERATED FILE, PLEASE DO NOT EDIT!!!--><EXT object="virtual_computer" version="4">
+  <OBJECT>
+    <ID name="virtual_computer" mc="Infrastructure.DiagramSet" uid="5a9d04be-7481-4734-a756-f5e3c3f959bc"/>
+    <PID name="virtual_computer" mc="Standard.Project" uid="48697f5e-9cd3-4e0f-9d8b-69e1bd812c57"/>
+    <ATTRIBUTES>
+      <ATT name="Name"><![CDATA[virtual_computer]]></ATT>
+      <ATT name="status">1970354901745664</ATT>
+    </ATTRIBUTES>
+    <DEPENDENCIES></DEPENDENCIES>
+  </OBJECT>
+</EXT>
