@@ -1,7 +1,8 @@
 ################################################################################
-
+import os.path
 import random
 import time
+from pathlib import Path
 from threading import Thread
 
 from screen import Screen
@@ -139,8 +140,28 @@ def draw_cubic_bezier():
         print(f"Drew a quadratic bezier curve with P0 {p0x, p0y} with P1 {p1x, p1y} with P2 {p2x, p2y} with P3 {p3x, p3y}")
         time.sleep(5)
 
+# --------------------------------------------------------------------------------
+def draw_text():
+    wait_for_screen()
+    while screen.is_on:
+        x, y = (random.randint(0, screen.resolution.width),
+                random.randint(0, screen.resolution.height))
+        with_bg_color = False if random.randint(0, 1) < 0.5 else True
+        font = f"{Path(__file__).parent.parent.parent}/resource/font/Urbanist/static/Urbanist-Regular.ttf"
+        print(f"Font {font}")
+        assert os.path.exists(font)
+        text = "Here is some \nmultiline text"
+        screen.draw_text(text, x, y,
+                         font_path=font,
+                         color=random_color_rgb(),
+                         font_size=48,
+                         line_spacing=1,
+                         bg_color=random_color_rgb() if with_bg_color else None)
+        print(f"Drew text {text} with font {font}")
+        time.sleep(5)
 
-Thread(target=draw_cubic_bezier, daemon=True).start()
+
+Thread(target=draw_text, daemon=True).start()
 
 screen.power_on()
 

@@ -233,7 +233,6 @@ class Screen:
         steps = max(8 * radius, 1)  # More steps = smoother arc
         delta_angle = (rad_end - rad_start) / steps
 
-        prevx = prevy = None
         for i in range(steps + 1):
             theta = rad_start + i * delta_angle
             x = int(cx + radius * math.cos(theta))
@@ -314,6 +313,7 @@ class Screen:
         y = (1 - t) ** 2 * p0y + 2 * (1 - t) * t * p1y + t ** 2 * p2y
         return int(x), int(y)
 
+    # --------------------------------------------------------------------------------
     def draw_quadratic_bezier(self, p0x: int, p0y: int, p1x: int, p1y: int, p2x: int, p2y: int,
                               color: tuple[int, int, int]):
         """Draw a quadratic Bézier curve (P0, P1, P2) with smooth interpolation"""
@@ -334,11 +334,13 @@ class Screen:
             prev_x, prev_y = next_x, next_y
             t = next_t
 
+    # --------------------------------------------------------------------------------
     def _bezier_cubic(self, t, p0x: int, p0y: int, p1x: int, p1y: int, p2x: int, p2y: int, p3x: int, p3y: int):
         x = (1 - t) ** 3 * p0x + 3 * (1 - t) ** 2 * t * p1x + 3 * (1 - t) * t ** 2 * p2x + t ** 3 * p3x
         y = (1 - t) ** 3 * p0y + 3 * (1 - t) ** 2 * t * p1y + 3 * (1 - t) * t ** 2 * p2y + t ** 3 * p3y
         return int(x), int(y)
 
+    # --------------------------------------------------------------------------------
     def draw_cubic_bezier(self, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color):
         """Draw a cubic Bézier curve (P0, P1, P2, P3) with smooth interpolation"""
         t = 0.0
@@ -356,3 +358,44 @@ class Screen:
             prev_x, prev_y = next_x, next_y
             t = next_t
 
+    # --------------------------------------------------------------------------------
+    def draw_text(self, text: str, x: int, y: int, font_path: str,
+                  color: tuple[int, int, int], font_size: int, antialias: bool = True, line_spacing: int = 2,
+                  font_object: Optional[pg.font.Font] = None,
+                  bg_color: tuple[int, int, int] = (0, 0, 0)):
+        """Draw multiline text at (x, y) using Pygame's font rendering.
+           Clips everything outside the virtual screen boundaries.
+        """
+        lines = text.expandtabs(4).split('\n')
+        current_y = y
+
+        font = font_object if font_object else pg.font.Font(font_path, font_size)
+        for line in lines:
+            if not line.strip():
+                current_y += font.get_linesize() + line_spacing
+                continue
+
+            text_surface = font.render(line, antialias, color, bg_color)
+            text_width, text_height = text_surface.get_size()
+
+            # Clip the rendered surface to fit within screen bounds
+            if current_y + text_height < 0 or current_y >= self.resolution.height:
+                current_y += text_height + line_spacing
+                continue  # Skip out-of-bounds lines
+
+            for dy in range(text_height):
+                screen_y = current_y + dy
+                if 0 <= screen_y < self.resolution.height:
+                    for dx in range(text_width):
+                        screen_x = x + dx
+                        if 0 <= screen_x < self.resolution.width:
+                            r, g, b, a = text_surface.get_at((dx, dy))
+                            if a > 0:
+                                self.set_pixel(screen_x, screen_y, (r, g, b))
+
+            current_y += text_height + line_spacing
+
+    # --------------------------------------------------------------------------------
+    def clear(self):
+        """Clear the screen."""
+        self.screen.fill((0, 0, 0))
