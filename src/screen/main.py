@@ -49,7 +49,30 @@ def fill_with_colors():
             screen.set_refresh_rate(screen.refresh_rate + 10)
             start = time.time()
 
-Thread(target=fill_with_colors, daemon=True).start()
+# --------------------------------------------------------------------------------
+def draw_line():
+    wait_for_screen()
+    if screen.is_on:
+        x1, y1, x2, y2 = (random.randint(0, screen.resolution.width), random.randint(0, screen.resolution.height),
+                          random.randint(0, screen.resolution.width), random.randint(0, screen.resolution.height))
+        screen.draw_line(x1, y1, x2, y2, random_color_rgb())
+        print(f"Drew line from {x1, y1} to {x2, y2}")
+        time.sleep(1 / screen.refresh_rate)
+
+# --------------------------------------------------------------------------------
+def draw_rectangles():
+    wait_for_screen()
+    while screen.is_on:
+        x, y, width, height = (random.randint(0, screen.resolution.width),
+                                 random.randint(0, screen.resolution.height),
+                                 200, 150)
+        filled = False if random.randint(0, 1) < 0.5 else True
+        screen.draw_rectangle(x, y, width, height, random_color_rgb(), fill=filled)
+        print(f"Drew rectangle from {x, y} with width {width} and height {height} {"not" if not filled else ""} filled")
+        time.sleep(5)
+
+
+Thread(target=draw_rectangles, daemon=True).start()
 
 screen.power_on()
 
