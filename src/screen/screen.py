@@ -10,31 +10,6 @@ import numpy as np
 from pygame import Surface
 
 ################################################################################
-@icontract.invariant(lambda self: 0 <= self.intensity <= 255)
-class SubPixel:
-
-    @icontract.require(lambda intensity: 0 <= intensity <= 255)
-    def __init__(self, intensity: int):
-        self.intensity = intensity
-
-
-################################################################################
-@icontract.invariant(lambda self: isinstance(self.red, SubPixel)
-                                  and isinstance(self.green, SubPixel)
-                                  and isinstance(self.blue, SubPixel))
-class Pixel:
-
-    def __init__(self):
-        self.red: SubPixel = SubPixel(0)
-        self.green: SubPixel = SubPixel(0)
-        self.blue: SubPixel = SubPixel(0)
-
-
-    def to_rgb_tuple(self):
-        return self.red.intensity, self.green.intensity, self.blue.intensity
-
-
-################################################################################
 class Resolution:
 
     def __init__(self, width: int, height: int):

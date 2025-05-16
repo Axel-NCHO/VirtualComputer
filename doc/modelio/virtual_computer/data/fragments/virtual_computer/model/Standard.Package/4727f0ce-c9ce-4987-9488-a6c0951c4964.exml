@@ -14,9 +14,6 @@
     </ATTRIBUTES>
     <DEPENDENCIES>
       <COMP relation="OwnedElement">
-        <COMPID name="Pixel" mc="Standard.Class" uid="6a2d7028-7529-4afb-aa45-e825acdd47a1"/>
-        <COMPID name="SubPixel" mc="Standard.Class" uid="2fd1bb12-e432-4e5e-af1b-ed57bc94e3e7"/>
-        <COMPID name="DisplayGrid" mc="Standard.Class" uid="d0a5e68a-2be7-4cea-8b38-304649b88f6f"/>
         <COMPID name="Resolution" mc="Standard.Class" uid="677e0771-6cea-4c4c-95b5-c76109d04674"/>
         <COMPID name="Screen" mc="Standard.Class" uid="86edfa77-42ab-4db8-9031-d52d16f29336"/>
         <COMPID name="RegisterAddressMapping" mc="Standard.Class" uid="00224205-6177-4533-ad38-4263e3519964"/>
