@@ -1,5 +1,5 @@
 ################################################################################
-
+import math
 from fractions import Fraction
 from typing import Optional
 from pygame.time import Clock
@@ -212,3 +212,147 @@ class Screen:
                 else:
                     x2, y2 = int(round(x_new)), int(round(y_new))
                     out_code2 = self._compute_out_code(x2, y2, width, height)
+
+    @icontract.require(lambda radius: radius >= 0)
+    def draw_arc(self, cx: int, cy: int, radius: int, angle_start: int, angle_end: int,
+                 color: tuple[int, int, int]):
+        """Draw an arc by plotting points along a circular path within angle range."""
+        if radius <= 0:
+            return  # Nothing to draw
+
+        x_max, y_max = self.resolution.width, self.resolution.height
+
+        # Convert degrees to radians
+        rad_start = math.radians(angle_start)
+        rad_end = math.radians(angle_end)
+
+        # Normalize angle range
+        if rad_end < rad_start:
+            rad_end += 2 * math.pi  # Support for angles like (330°, 30°)
+
+        steps = max(8 * radius, 1)  # More steps = smoother arc
+        delta_angle = (rad_end - rad_start) / steps
+
+        prevx = prevy = None
+        for i in range(steps + 1):
+            theta = rad_start + i * delta_angle
+            x = int(cx + radius * math.cos(theta))
+            y = int(cy + radius * math.sin(theta))
+
+            # Skip out-of-bounds points
+            if 0 <= x < x_max and 0 <= y < y_max:
+                self.set_pixel(x, y, color)
+
+    # --------------------------------------------------------------------------------
+    def draw_circle(self, cx: int, cy: int, radius: int, color: tuple[int, int, int], fill: bool = False):
+        if not fill:
+            self.draw_arc(cx, cy, radius, 0, 360, color)
+        else:
+            x_max, y_max = self.resolution.width, self.resolution.height
+
+            for y in range(-radius, radius + 1):
+                y_pos = cy + y
+                if y_pos < 0 or y_pos >= y_max:
+                    continue
+
+                x_span = int((radius ** 2 - y ** 2) ** 0.5)
+                x_start = cx - x_span
+                x_end = cx + x_span
+
+                # Clip horizontal bounds
+                x_start = max(x_start, 0)
+                x_end = min(x_end, x_max - 1)
+
+                for x in range(x_start, x_end + 1):
+                    self.set_pixel(x, y_pos, color)
+
+    # --------------------------------------------------------------------------------
+    def draw_ellipse(self, cx: int, cy: int, rx: int, ry: int, color: tuple[int, int, int], fill: bool = False):
+        if not fill:
+            self.draw_ellipse_outlined(cx, cy, rx, ry, color)
+        else:
+            self.draw_ellipse_filled(cx, cy, rx, ry, color)
+
+    # --------------------------------------------------------------------------------
+    def draw_ellipse_outlined(self, cx: int, cy: int, rx: int, ry: int, color: tuple[int, int, int]):
+        """Draw an outlined ellipse using polar coordinates"""
+        if rx <= 0 or ry <= 0:
+            return
+
+        steps = max(8 * max(rx, ry), 1)
+        for i in range(steps):
+            angle = 2 * math.pi * i / steps
+            x = int(cx + rx * math.cos(angle))
+            y = int(cy + ry * math.sin(angle))
+            if 0 <= x < self.resolution.width and 0 <= y < self.resolution.height:
+                self.set_pixel(x, y, color)
+
+    # --------------------------------------------------------------------------------
+    def draw_ellipse_filled(self, cx: int, cy: int, rx: int, ry: int, color: tuple[int, int, int]):
+        """Draw an ellipse and fill it using a vertical scanline method"""
+        if rx <= 0 or ry <= 0:
+            return
+
+        x_max, y_max = self.resolution.width, self.resolution.height
+
+        for y in range(-ry, ry + 1):
+            y_pos = cy + y
+            if y_pos < 0 or y_pos >= y_max:
+                continue
+
+            # Horizontal span at this vertical slice
+            x_span = int(rx * (1 - (y ** 2 / ry ** 2)) ** 0.5)
+            x_start = max(cx - x_span, 0)
+            x_end = min(cx + x_span, x_max - 1)
+
+            for x in range(x_start, x_end + 1):
+                self.set_pixel(x, y_pos, color)
+
+    # --------------------------------------------------------------------------------
+    def _bezier_quadratic(self, t, p0x: int, p0y: int, p1x: int, p1y: int, p2x: int, p2y: int):
+        x = (1 - t) ** 2 * p0x + 2 * (1 - t) * t * p1x + t ** 2 * p2x
+        y = (1 - t) ** 2 * p0y + 2 * (1 - t) * t * p1y + t ** 2 * p2y
+        return int(x), int(y)
+
+    def draw_quadratic_bezier(self, p0x: int, p0y: int, p1x: int, p1y: int, p2x: int, p2y: int,
+                              color: tuple[int, int, int]):
+        """Draw a quadratic Bézier curve (P0, P1, P2) with smooth interpolation"""
+        t = 0.0
+        prev_x, prev_y = self._bezier_quadratic(t, p0x, p0y, p1x, p1y, p2x, p2y)
+        while t < 1.0:
+            # Adaptive step size based on local curve flatness
+            dt = 0.001  # minimum step
+            next_t = min(t + dt, 1.0)
+            next_x, next_y = self._bezier_quadratic(next_t, p0x, p0y, p1x, p1y, p2x, p2y)
+
+            # Increase step if next point is close
+            while next_t < 1.0 and (next_x == prev_x and next_y == prev_y):
+                next_t = min(next_t + dt, 1.0)
+                next_x, next_y = self._bezier_quadratic(next_t, p0x, p0y, p1x, p1y, p2x, p2y)
+
+            self.draw_line(prev_x, prev_y, next_x, next_y, color)
+            prev_x, prev_y = next_x, next_y
+            t = next_t
+
+    def _bezier_cubic(self, t, p0x: int, p0y: int, p1x: int, p1y: int, p2x: int, p2y: int, p3x: int, p3y: int):
+        x = (1 - t) ** 3 * p0x + 3 * (1 - t) ** 2 * t * p1x + 3 * (1 - t) * t ** 2 * p2x + t ** 3 * p3x
+        y = (1 - t) ** 3 * p0y + 3 * (1 - t) ** 2 * t * p1y + 3 * (1 - t) * t ** 2 * p2y + t ** 3 * p3y
+        return int(x), int(y)
+
+    def draw_cubic_bezier(self, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color):
+        """Draw a cubic Bézier curve (P0, P1, P2, P3) with smooth interpolation"""
+        t = 0.0
+        prev_x, prev_y = self._bezier_cubic(t, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y)
+        while t < 1.0:
+            dt = 0.001  # base step
+            next_t = min(t + dt, 1.0)
+            next_x, next_y = self._bezier_cubic(next_t, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y)
+
+            while next_t < 1.0 and (next_x == prev_x and next_y == prev_y):
+                next_t = min(next_t + dt, 1.0)
+                next_x, next_y = self._bezier_cubic(next_t, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y)
+
+            self.draw_line(prev_x, prev_y, next_x, next_y, color)
+            prev_x, prev_y = next_x, next_y
+            t = next_t
+

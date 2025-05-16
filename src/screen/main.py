@@ -71,8 +71,76 @@ def draw_rectangles():
         print(f"Drew rectangle from {x, y} with width {width} and height {height} {"not" if not filled else ""} filled")
         time.sleep(5)
 
+# --------------------------------------------------------------------------------
+def draw_arcs():
+    wait_for_screen()
+    while screen.is_on:
+        x, y, radius, start, end = (random.randint(0, screen.resolution.width),
+                                    random.randint(0, screen.resolution.height),
+                                    100,
+                                    random.randint(0, 10),
+                                    random.randint(20, 360))
+        screen.draw_arc(x, y, radius, start, end, random_color_rgb())
+        print(f"Drew an arc with center {x, y} with radius {radius} with angle from {start}° to {end}°")
+        time.sleep(5)
 
-Thread(target=draw_rectangles, daemon=True).start()
+# --------------------------------------------------------------------------------
+def draw_circles():
+    wait_for_screen()
+    while screen.is_on:
+        x, y, radius = (random.randint(0, screen.resolution.width),
+                                    random.randint(0, screen.resolution.height),
+                                    100)
+        filled = False if random.randint(0, 1) < 0.5 else True
+        screen.draw_circle(x, y, radius, random_color_rgb(), fill=filled)
+        print(f"Drew a circle with center {x, y} with radius {radius}")
+        time.sleep(5)
+
+# --------------------------------------------------------------------------------
+def draw_ellipses():
+    wait_for_screen()
+    while screen.is_on:
+        x, y, radius_x, radius_y = (random.randint(0, screen.resolution.width),
+                                    random.randint(0, screen.resolution.height),
+                                    100,
+                                    25)
+        filled = False if random.randint(0, 1) < 0.5 else True
+        screen.draw_ellipse(x, y, radius_x, radius_y, random_color_rgb(), fill=filled)
+        print(f"Drew an ellipse with center {x, y} with radius_x {radius_x} and radius_y {radius_y}")
+        time.sleep(5)
+
+# --------------------------------------------------------------------------------
+def draw_quadratic_bezier():
+    wait_for_screen()
+    while screen.is_on:
+        p0x, p0y, p1x, p1y, p2x, p2y = (random.randint(0, screen.resolution.width),
+                                        random.randint(0, screen.resolution.height),
+                                        random.randint(0, screen.resolution.width),
+                                        random.randint(0, screen.resolution.height),
+                                        random.randint(0, screen.resolution.width),
+                                        random.randint(0, screen.resolution.height))
+        screen.draw_quadratic_bezier(p0x, p0y, p1x, p1y, p2x, p2y, random_color_rgb())
+        print(f"Drew a quadratic bezier curve with P0 {p0x, p0y} with P1 {p1x, p1y} with P2 {p2x, p2y}")
+        time.sleep(5)
+
+# --------------------------------------------------------------------------------
+def draw_cubic_bezier():
+    wait_for_screen()
+    while screen.is_on:
+        p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y = (random.randint(0, screen.resolution.width),
+                                                  random.randint(0, screen.resolution.height),
+                                                  random.randint(0, screen.resolution.width),
+                                                  random.randint(0, screen.resolution.height),
+                                                  random.randint(0, screen.resolution.width),
+                                                  random.randint(0, screen.resolution.height),
+                                                  random.randint(0, screen.resolution.width),
+                                                  random.randint(0, screen.resolution.height))
+        screen.draw_cubic_bezier(p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, random_color_rgb())
+        print(f"Drew a quadratic bezier curve with P0 {p0x, p0y} with P1 {p1x, p1y} with P2 {p2x, p2y} with P3 {p3x, p3y}")
+        time.sleep(5)
+
+
+Thread(target=draw_cubic_bezier, daemon=True).start()
 
 screen.power_on()
 
