@@ -87,5 +87,10 @@ class Screen:
     def fill(self, color: tuple[int, int, int]):
         self.frame_buffer[:, :] = color
 
+    # --------------------------------------------------------------------------------
+    @icontract.ensure(lambda hz, self: self.refresh_rate == hz)
+    def set_refresh_rate(self, hz: int):
+        self.refresh_rate = hz
+
 
 

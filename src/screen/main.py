@@ -38,11 +38,16 @@ def set_pixels():
 # --------------------------------------------------------------------------------
 def fill_with_colors():
     wait_for_screen()
+    start = time.time()
     while screen.is_on:
         x, y = random.randint(0, 700), random.randint(0, 700)
         screen.fill(random_color_rgb())
-        print(f"Screen filled with random color")
         time.sleep(1 / screen.refresh_rate)
+
+        # Increment refresh rate every 10 seconds
+        if time.time() - start >= 10:
+            screen.set_refresh_rate(screen.refresh_rate + 10)
+            start = time.time()
 
 Thread(target=fill_with_colors, daemon=True).start()
 
