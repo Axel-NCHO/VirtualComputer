@@ -1,11 +1,9 @@
 ################################################################################
 import random
-
-import icontract
+import cupy as cp
 
 ################################################################################
-@icontract.require(lambda hex_code: hex_code.startswith('#') and len(hex_code) >= 4)
-def hex_to_rgb(hex_code) -> tuple[int, int, int]:
+def hex_to_rgb(hex_code) -> cp.ndarray:
     """
     Convert a hex color string to RGB tuple.
     Supports formats: '#RRGGBB', 'RRGGBB', '#RGB', 'RGB'
@@ -18,12 +16,16 @@ def hex_to_rgb(hex_code) -> tuple[int, int, int]:
     if len(hex_code) != 6:
         raise ValueError(f"Invalid hex color code: {hex_code}")
 
-    return (
+    return cp.array((
         int(hex_code[0:2], 16),  # Red
         int(hex_code[2:4], 16),  # Green
         int(hex_code[4:6], 16)  # Blue
-    )
+    ))
 
 # --------------------------------------------------------------------------------
-def random_color_rgb() -> tuple[int, int, int]:
-    return random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)
+def random_color_rgb() -> cp.ndarray:
+    return cp.array((
+        random.randint(0, 255),
+        random.randint(0, 255),
+        random.randint(0, 255)
+    ))

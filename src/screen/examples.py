@@ -9,23 +9,23 @@ from screen import Screen
 from util.colors import hex_to_rgb, random_color_rgb
 
 ################################################################################
-screen = Screen(height=720, width=1280, hz=60, brightness=0.2)
+screen = Screen(height=720, width=1280, hz=1, brightness=1)
 print(f"The screen has a ratio of {screen.resolution.ratio}")
 
 # --------------------------------------------------------------------------------
 def wait_for_screen(max_wait_seconds: int = 30):
-    wait_for_screen = 0
+    waited = 0
     while not screen.is_on:
         print("Waiting for the screen to start. Checking again in a second")
         time.sleep(1)
-        wait_for_screen += 1
-        if wait_for_screen >= max_wait_seconds:
+        waited += 1
+        if waited >= max_wait_seconds:
             break
 
-    if wait_for_screen >= max_wait_seconds:
+    if waited >= max_wait_seconds:
         print(f"The screen hasn't started after {max_wait_seconds} seconds. Exiting.")
     else:
-        print(f"The screen has started after {wait_for_screen} seconds.")
+        print(f"The screen has started after {waited} seconds.")
 
 # --------------------------------------------------------------------------------
 def set_pixels():
@@ -41,7 +41,6 @@ def fill_with_colors():
     wait_for_screen()
     start = time.time()
     while screen.is_on:
-        x, y = random.randint(0, 700), random.randint(0, 700)
         screen.fill(random_color_rgb())
         time.sleep(1 / screen.refresh_rate)
 
@@ -92,8 +91,7 @@ def draw_circles():
         x, y, radius = (random.randint(0, screen.resolution.width),
                                     random.randint(0, screen.resolution.height),
                                     100)
-        filled = False if random.randint(0, 1) < 0.5 else True
-        screen.draw_circle(x, y, radius, random_color_rgb(), fill=filled)
+        screen.draw_circle(x, y, radius, random_color_rgb(), thickness=-1)
         print(f"Drew a circle with center {x, y} with radius {radius}")
         time.sleep(5)
 
@@ -105,7 +103,6 @@ def draw_ellipses():
                                     random.randint(0, screen.resolution.height),
                                     100,
                                     25)
-        filled = False if random.randint(0, 1) < 0.5 else True
         screen.draw_ellipse(x, y, radius_x, radius_y, random_color_rgb(), thickness=-1)
         print(f"Drew an ellipse with center {x, y} with radius_x {radius_x} and radius_y {radius_y}")
         time.sleep(5)
@@ -166,7 +163,7 @@ def animation_translate_x():
         x, y = 0, 100
         font_path = f"{Path(__file__).parent.parent.parent}/resource/font/Urbanist/static/Urbanist-Regular.ttf"
         text = "Here is some \nmultiline text"
-        speed = 800  # pixels per second
+        speed = 500  # pixels per second
 
         # Pre-render font for better performance
         font = pg.font.Font(font_path, 48)
@@ -188,13 +185,14 @@ def animation_translate_x():
             # Drawing operations
             if not screen.is_on:
                 break
-            # screen.draw_text(text, x, y,
-            #                  line_spacing=1,
-            #                  color=hex_to_rgb("#ffffff"),
-            #                  font=font)  # Use pre-rendered font
-            screen.draw_ellipse(x, y, 100, 50, hex_to_rgb("#ffffff"), thickness=-1)
-            # screen.draw_ellipse(x, y, 100, 50, hex_to_rgb("#ffffff"))
-            time.sleep(1/screen.refresh_rate)
+            screen.draw_text(text, x, y,
+                             line_spacing=1,
+                             color=hex_to_rgb("#ffffff"),
+                             font=font)  # Use pre-rendered font
+            # screen.draw_ellipse(x, y, 100, 50, hex_to_rgb("#ffffff"), thickness=-1)
+            # screen.draw_circle(x, y, 100, hex_to_rgb("#ffffff"), thickness=-1)
+            # screen.draw_arc(x, y, 100, 0, 157, hex_to_rgb("#ffffff"))
+            time.sleep(1/60)
             screen.clear()
 
 def animation_ellipse_radius():
@@ -246,7 +244,7 @@ def animation_ellipse_radius():
             # screen.draw_ellipse(x, y, 100, 50, hex_to_rgb("#ffffff"))
 
 
-Thread(target=animation_ellipse_radius, daemon=True).start()
+Thread(target=animation_translate_x, daemon=True).start()
 
 screen.power_on()
 
