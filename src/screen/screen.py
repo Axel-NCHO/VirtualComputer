@@ -34,7 +34,7 @@ class Screen:
     _BOTTOM = 4  # 0100
     _TOP = 8  # 1000
 
-    #--------------------------------------------------------------------------------
+    # --------------------------------------------------------------------------------
     def __init__(self, height, width, hz: int = 60, brightness: float = 1.0):
         self.resolution: Resolution = Resolution(width, height)
         self.frame_buffer = cp.zeros((width, height, 3), dtype=np.uint8)
@@ -50,7 +50,7 @@ class Screen:
         self.cached_texts: dict[tuple[str, bool, tuple, tuple, pg.font.Font], pg.Surface] = {}
         self._dirty_lock = Lock()
 
-    #--------------------------------------------------------------------------------
+    # --------------------------------------------------------------------------------
     def power_on(self):
         self.screen = pg.display.set_mode((self.resolution.width, self.resolution.height),
                                           pg.DOUBLEBUF | pg.HWSURFACE,
@@ -75,7 +75,7 @@ class Screen:
             self.update()
             self.clock.tick(self.refresh_rate)
 
-    #--------------------------------------------------------------------------------
+    # --------------------------------------------------------------------------------
     def power_off(self):
         self.is_on = False
         pg.quit()

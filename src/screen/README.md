@@ -9,4 +9,5 @@ using [Modelio](https://www.modelio.org/index.htm).
 
 ## Usage
 
+You need an NVIDIA GPU to run the screen. Minimal setup to be specified later.  
 There are example usages that you can run in [examples.py](examples.py).
