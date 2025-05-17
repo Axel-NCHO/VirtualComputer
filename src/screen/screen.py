@@ -228,6 +228,7 @@ class Screen:
                     x2, y2 = int(round(x_new)), int(round(y_new))
                     out_code2 = self._compute_out_code(x2, y2, width, height)
 
+    # --------------------------------------------------------------------------------
     def draw_arc(self, cx: int, cy: int, radius: int, angle_start: int, angle_end: int,
                  color: cp.ndarray):
         """Draw an arc by plotting points along a circular path within angle range."""
@@ -266,7 +267,7 @@ class Screen:
 
     # --------------------------------------------------------------------------------
     def draw_ellipse(self, cx: int, cy: int, rx: int, ry: int, color: cp.ndarray, thickness: int = 1):
-        """Draw an outlined ellipse using polar coordinates"""
+        """Draw an ellipse using polar coordinates"""
 
         h, w = self.frame_buffer.shape[:2]
         if thickness < 0:
@@ -274,6 +275,7 @@ class Screen:
         else:
             self._draw_ellipse_outlined(cx, cy, rx, ry, color, thickness, h, w)
 
+    # --------------------------------------------------------------------------------
     def _draw_elipse_filled(self, cx: int, cy: int, rx: int, ry: int, color: cp.ndarray, _h, _w):
 
         # Create coordinate grids
@@ -291,7 +293,7 @@ class Screen:
         with self._dirty_lock:
             self._dirty = True
 
-
+    # --------------------------------------------------------------------------------
     def _draw_ellipse_outlined(self, cx: int, cy: int, rx: int, ry: int, color: cp.ndarray, thickness: int, _h, _w):
 
         # Create coordinate grids
@@ -384,57 +386,13 @@ class Screen:
             self._dirty = True
 
     # --------------------------------------------------------------------------------
-    # def draw_text(self, text: str, x: int, y: int,
-    #               color: cp.ndarray,
-    #               antialias: bool = True,
-    #               line_spacing: int = 2,
-    #               font: Optional[pg.font.Font] = None,
-    #               bg_color: Optional[cp.ndarray] = None):
-    #     """Draw multiline text at (x, y) using Pygame's font rendering.
-    #        Clips everything outside the virtual screen boundaries.
-    #     """
-    #
-    #     lines = text.expandtabs(4).split('\n')
-    #     current_y = y
-    #
-    #     for line in lines:
-    #         if not line.strip():
-    #             current_y += font.get_linesize() + line_spacing
-    #             continue
-    #
-    #         color_cpu = tuple(color.get().tolist())
-    #         bg_color_cpu = tuple(bg_color.get().tolist()) if bg_color else None
-    #         text_surface = self.get_cached_text((line, antialias, color_cpu, bg_color_cpu, font))
-    #         text_width, text_height = text_surface.get_size()
-    #
-    #         # Clip the rendered surface to fit within screen bounds
-    #         if current_y + text_height < 0 or current_y >= self.resolution.height:
-    #             current_y += text_height + line_spacing
-    #             continue  # Skip out-of-bounds lines
-    #
-    #         for dy in range(text_height):
-    #             screen_y = current_y + dy
-    #             if 0 <= screen_y < self.resolution.height:
-    #                 for dx in range(text_width):
-    #                     screen_x = x + dx
-    #                     if 0 <= screen_x < self.resolution.width:
-    #                         r, g, b, a = text_surface.get_at((dx, dy))
-    #                         if a > 0:
-    #                             self.set_pixel(screen_x, screen_y, cp.array((r, g, b)))
-    #
-    #         current_y += text_height + line_spacing
-    #
-    #     with self._dirty_lock:
-    #         self._dirty = True
-
     def draw_text(self, text: str, x: int, y: int,
                   color: cp.ndarray,
                   antialias: bool = True,
                   line_spacing: int = 2,
                   font: Optional[pg.font.Font] = None,
                   bg_color: Optional[cp.ndarray] = None):
-        """Efficiently draw multiline text at (x, y) using Pygame and batch transfer to GPU (W, H, 3 layout)."""
-
+        """Efficiently draw multiline text at (x, y) using batch transfer to GPU (W, H, 3 layout)."""
         lines = text.expandtabs(4).split('\n')
         current_y = y
 
@@ -489,6 +447,7 @@ class Screen:
         with self._dirty_lock:
             self._dirty = True
 
+    # --------------------------------------------------------------------------------
     def get_cached_text(self,
                         key: tuple[str, bool, tuple, tuple, pg.font.Font]) -> Surface:
         try:

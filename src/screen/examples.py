@@ -157,6 +157,7 @@ def draw_text():
         print(f"Drew text {text} with font {font}")
         time.sleep(5)
 
+# --------------------------------------------------------------------------------
 def animation_translate_x():
     wait_for_screen()
     while screen.is_on:
@@ -195,6 +196,7 @@ def animation_translate_x():
             time.sleep(1/60)
             screen.clear()
 
+# --------------------------------------------------------------------------------
 def animation_ellipse_radius():
     wait_for_screen()
     while screen.is_on:
@@ -243,7 +245,7 @@ def animation_ellipse_radius():
             screen.clear()
             # screen.draw_ellipse(x, y, 100, 50, hex_to_rgb("#ffffff"))
 
-
+################################################################################
 Thread(target=animation_translate_x, daemon=True).start()
 
 screen.power_on()
