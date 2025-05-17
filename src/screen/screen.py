@@ -24,6 +24,7 @@ class Resolution:
             return f"{ratio.numerator}:{ratio.denominator}"
         else:
             raise AttributeError(f'"{self.__class__}" object has no attribute "{item}"')
+
 ################################################################################
 class Screen:
 

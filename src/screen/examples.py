@@ -1,3 +1,7 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+################################################################################
+# Examples of how do draw on the screen and make animations
 ################################################################################
 import random
 import pygame as pg
@@ -246,8 +250,10 @@ def animation_ellipse_radius():
             # screen.draw_ellipse(x, y, 100, 50, hex_to_rgb("#ffffff"))
 
 ################################################################################
+# Run screen commands in a separate thread
 Thread(target=animation_translate_x, daemon=True).start()
 
+# This is a blocking call
 screen.power_on()
 
 print("Shutdown")
