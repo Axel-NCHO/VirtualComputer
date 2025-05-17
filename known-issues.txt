@@ -1,0 +1,3 @@
+- some drawings aren't optimized yet
+- problem when brightness bot 1 because frame regeneration for color modulation. Maybe there is a way to modulate the
+    colors without having to recompute the frame for each refresh while being able to recover original values ?

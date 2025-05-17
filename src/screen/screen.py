@@ -1,12 +1,13 @@
 ################################################################################
 import math
 from fractions import Fraction
+from threading import Lock
 from typing import Optional
 from pygame.time import Clock
 
-import icontract
 import pygame as pg
 import numpy as np
+import cv2
 from pygame import Surface
 
 ################################################################################
@@ -32,20 +33,25 @@ class Screen:
     _TOP = 8  # 1000
 
     #--------------------------------------------------------------------------------
-    def __init__(self, height, width, hz: int = 60):
+    def __init__(self, height, width, hz: int = 60, brightness: float = 1.0):
         self.resolution: Resolution = Resolution(width, height)
         self.frame_buffer = np.zeros((width, height, 3), dtype=np.uint8)
         self.is_on = False
         self.refresh_rate = hz
         pg.init()
         self.screen: Optional[Surface] = None
+        self.surface = pg.Surface((self.resolution.width, self.resolution.height))
         self.clock: Clock = pg.time.Clock()
-
-
+        self.brightness: float = brightness
+        self.bright_frame = None
+        self._dirty = False
+        self.cached_texts: dict[tuple[str, bool, tuple[int, int, int], tuple[int, int, int], pg.font.Font], pg.Surface] = {}
+        self._dirty_lock = Lock()
 
     #--------------------------------------------------------------------------------
     def power_on(self):
-        self.screen = pg.display.set_mode((self.resolution.width, self.resolution.height), pg.DOUBLEBUF|pg.HWSURFACE,
+        self.screen = pg.display.set_mode((self.resolution.width, self.resolution.height),
+                                          pg.DOUBLEBUF | pg.HWSURFACE,
                                           vsync=1)
         pg.display.set_caption("Virtual screen")
         self.is_on = True
@@ -54,7 +60,6 @@ class Screen:
         self._run_event_loop()
 
     # --------------------------------------------------------------------------------
-    @icontract.require(lambda self: self.screen)
     def _run_event_loop(self):
         while self.is_on:
             for event in pg.event.get():
@@ -69,25 +74,32 @@ class Screen:
             self.clock.tick(self.refresh_rate)
 
     #--------------------------------------------------------------------------------
-    @icontract.ensure(lambda self: not self.is_on)
     def power_off(self):
         self.is_on = False
         pg.quit()
 
     # --------------------------------------------------------------------------------
-    @icontract.require(lambda self: self.screen)
-    @icontract.ensure(lambda self: self.screen)
     def update(self):
         if self.is_on:
-            surface = pg.surfarray.make_surface(self.frame_buffer)
-            self.screen.blit(surface, (0, 0))
+            if self._dirty:
+                if self.brightness != 1.0:
+                    self.bright_frame = np.clip(self.frame_buffer.astype(np.float16) * self.brightness, 0, 255).astype(np.uint8)
+                else:
+                    self.bright_frame = self.frame_buffer.copy()
+                pg.surfarray.blit_array(self.surface, self.bright_frame)
+                with self._dirty_lock:
+                    self._dirty = False
+            self.screen.blit(self.surface, (0, 0))
             pg.display.flip()
 
             if pg.time.get_ticks() % 1000 < 16:  # ~once per second
                 print(f"FPS: {self.clock.get_fps():.1f}")
 
     # --------------------------------------------------------------------------------
-    @icontract.require(lambda x, y, self: 0 <= x <= self.resolution.width and 0 <= y <= self.resolution.height)
+    def set_brightness(self, brightness: float):
+        self.brightness = brightness
+
+    # --------------------------------------------------------------------------------
     def set_pixel(self, x: int, y: int, color: tuple[int, int, int]):
         self.frame_buffer[x, y] = color
 
@@ -96,7 +108,6 @@ class Screen:
         self.frame_buffer[:, :] = color
 
     # --------------------------------------------------------------------------------
-    @icontract.ensure(lambda hz, self: self.refresh_rate == hz)
     def set_refresh_rate(self, hz: int):
         self.refresh_rate = hz
 
@@ -135,6 +146,8 @@ class Screen:
                 y += sy
 
         self.set_pixel(x, y, color)  # Draw final point
+        with self._dirty_lock:
+            self._dirty = True
 
     # --------------------------------------------------------------------------------
     def draw_rectangle(self, x: int, y: int, width: int, height: int, color: tuple[int, int, int], fill: bool = False):
@@ -149,14 +162,15 @@ class Screen:
         y_end = min(self.resolution.height, y + height)
 
         if fill:
-            for yi in range(y_start, y_end):
-                for xi in range(x_start, x_end):
-                    self.set_pixel(xi, yi, color)
+            self.frame_buffer[x_start:x_end, y_start:y_end] = color
         else:
             self.draw_line(x, y, x + width - 1, y, color)  # Top
             self.draw_line(x, y + height - 1, x + width - 1, y + height - 1, color)  # Bottom
             self.draw_line(x, y, x, y + height - 1, color)  # Left
             self.draw_line(x + width - 1, y, x + width - 1, y + height - 1, color)  # Right
+
+        with self._dirty_lock:
+            self._dirty = True
 
     # --------------------------------------------------------------------------------
     def _compute_out_code(self, x, y, width, height):
@@ -213,7 +227,6 @@ class Screen:
                     x2, y2 = int(round(x_new)), int(round(y_new))
                     out_code2 = self._compute_out_code(x2, y2, width, height)
 
-    @icontract.require(lambda radius: radius >= 0)
     def draw_arc(self, cx: int, cy: int, radius: int, angle_start: int, angle_end: int,
                  color: tuple[int, int, int]):
         """Draw an arc by plotting points along a circular path within angle range."""
@@ -242,70 +255,54 @@ class Screen:
             if 0 <= x < x_max and 0 <= y < y_max:
                 self.set_pixel(x, y, color)
 
+        with self._dirty_lock:
+            self._dirty = True
+
     # --------------------------------------------------------------------------------
     def draw_circle(self, cx: int, cy: int, radius: int, color: tuple[int, int, int], fill: bool = False):
         if not fill:
             self.draw_arc(cx, cy, radius, 0, 360, color)
         else:
-            x_max, y_max = self.resolution.width, self.resolution.height
+            # x_max, y_max = self.resolution.width, self.resolution.height
+            #
+            # for y in range(-radius, radius + 1):
+            #     y_pos = cy + y
+            #     if y_pos < 0 or y_pos >= y_max:
+            #         continue
+            #
+            #     x_span = int((radius ** 2 - y ** 2) ** 0.5)
+            #     x_start = cx - x_span
+            #     x_end = cx + x_span
+            #
+            #     # Clip horizontal bounds
+            #     x_start = max(x_start, 0)
+            #     x_end = min(x_end, x_max - 1)
+            #
+            #     for x in range(x_start, x_end + 1):
+            #         self.set_pixel(x, y_pos, color)
+            cv2.circle(self.frame_buffer, (cy, cx), radius, color, -1)
 
-            for y in range(-radius, radius + 1):
-                y_pos = cy + y
-                if y_pos < 0 or y_pos >= y_max:
-                    continue
-
-                x_span = int((radius ** 2 - y ** 2) ** 0.5)
-                x_start = cx - x_span
-                x_end = cx + x_span
-
-                # Clip horizontal bounds
-                x_start = max(x_start, 0)
-                x_end = min(x_end, x_max - 1)
-
-                for x in range(x_start, x_end + 1):
-                    self.set_pixel(x, y_pos, color)
-
-    # --------------------------------------------------------------------------------
-    def draw_ellipse(self, cx: int, cy: int, rx: int, ry: int, color: tuple[int, int, int], fill: bool = False):
-        if not fill:
-            self.draw_ellipse_outlined(cx, cy, rx, ry, color)
-        else:
-            self.draw_ellipse_filled(cx, cy, rx, ry, color)
+            with self._dirty_lock:
+                self._dirty = True
 
     # --------------------------------------------------------------------------------
-    def draw_ellipse_outlined(self, cx: int, cy: int, rx: int, ry: int, color: tuple[int, int, int]):
+    def draw_ellipse(self, cx: int, cy: int, rx: int, ry: int, color: tuple[int, int, int], thickness: int = 1):
         """Draw an outlined ellipse using polar coordinates"""
-        if rx <= 0 or ry <= 0:
-            return
+        # if rx <= 0 or ry <= 0:
+        #     return
+        #
+        # steps = max(8 * max(rx, ry), 1)
+        # for i in range(steps):
+        #     angle = 2 * math.pi * i / steps
+        #     x = int(cx + rx * math.cos(angle))
+        #     y = int(cy + ry * math.sin(angle))
+        #     if 0 <= x < self.resolution.width and 0 <= y < self.resolution.height:
+        #         self.set_pixel(x, y, color)
 
-        steps = max(8 * max(rx, ry), 1)
-        for i in range(steps):
-            angle = 2 * math.pi * i / steps
-            x = int(cx + rx * math.cos(angle))
-            y = int(cy + ry * math.sin(angle))
-            if 0 <= x < self.resolution.width and 0 <= y < self.resolution.height:
-                self.set_pixel(x, y, color)
+        cv2.ellipse(self.frame_buffer, (cy, cx), (ry, rx), 0, 0, 360, color, thickness=thickness)
 
-    # --------------------------------------------------------------------------------
-    def draw_ellipse_filled(self, cx: int, cy: int, rx: int, ry: int, color: tuple[int, int, int]):
-        """Draw an ellipse and fill it using a vertical scanline method"""
-        if rx <= 0 or ry <= 0:
-            return
-
-        x_max, y_max = self.resolution.width, self.resolution.height
-
-        for y in range(-ry, ry + 1):
-            y_pos = cy + y
-            if y_pos < 0 or y_pos >= y_max:
-                continue
-
-            # Horizontal span at this vertical slice
-            x_span = int(rx * (1 - (y ** 2 / ry ** 2)) ** 0.5)
-            x_start = max(cx - x_span, 0)
-            x_end = min(cx + x_span, x_max - 1)
-
-            for x in range(x_start, x_end + 1):
-                self.set_pixel(x, y_pos, color)
+        with self._dirty_lock:
+            self._dirty = True
 
     # --------------------------------------------------------------------------------
     def _bezier_quadratic(self, t, p0x: int, p0y: int, p1x: int, p1y: int, p2x: int, p2y: int):
@@ -334,6 +331,9 @@ class Screen:
             prev_x, prev_y = next_x, next_y
             t = next_t
 
+        with self._dirty_lock:
+            self._dirty = True
+
     # --------------------------------------------------------------------------------
     def _bezier_cubic(self, t, p0x: int, p0y: int, p1x: int, p1y: int, p2x: int, p2y: int, p3x: int, p3y: int):
         x = (1 - t) ** 3 * p0x + 3 * (1 - t) ** 2 * t * p1x + 3 * (1 - t) * t ** 2 * p2x + t ** 3 * p3x
@@ -358,24 +358,31 @@ class Screen:
             prev_x, prev_y = next_x, next_y
             t = next_t
 
+        with self._dirty_lock:
+            self._dirty = True
+
     # --------------------------------------------------------------------------------
-    def draw_text(self, text: str, x: int, y: int, font_path: str,
-                  color: tuple[int, int, int], font_size: int, antialias: bool = True, line_spacing: int = 2,
-                  font_object: Optional[pg.font.Font] = None,
-                  bg_color: tuple[int, int, int] = (0, 0, 0)):
+    def draw_text(self, text: str, x: int, y: int,
+                  color: tuple[int, int, int],
+                  antialias: bool = True,
+                  line_spacing: int = 2,
+                  font: Optional[pg.font.Font] = None,
+                  bg_color: Optional[tuple[int, int, int]] = None):
         """Draw multiline text at (x, y) using Pygame's font rendering.
            Clips everything outside the virtual screen boundaries.
         """
+
+        start = pg.time.get_ticks()
+
         lines = text.expandtabs(4).split('\n')
         current_y = y
 
-        font = font_object if font_object else pg.font.Font(font_path, font_size)
         for line in lines:
             if not line.strip():
                 current_y += font.get_linesize() + line_spacing
                 continue
 
-            text_surface = font.render(line, antialias, color, bg_color)
+            text_surface = self.get_cached_text((line, antialias, color, bg_color, font))
             text_width, text_height = text_surface.get_size()
 
             # Clip the rendered surface to fit within screen bounds
@@ -395,7 +402,24 @@ class Screen:
 
             current_y += text_height + line_spacing
 
+        with self._dirty_lock:
+            self._dirty = True
+
+        elapsed = pg.time.get_ticks() - start
+        print(f"Frame took {elapsed} ms")
+
+    def get_cached_text(self,
+                        key: tuple[str, bool, tuple[int, int, int], tuple[int, int, int], pg.font.Font]) -> Surface:
+        try:
+            return self.cached_texts[key]
+        except KeyError:
+            text, aliasing, color, bg_color, font = key
+            surface = font.render(text, aliasing, color, bg_color)
+            self.cached_texts[key] = surface
+            return surface
+        # TODO: Maybe fix a size limit for the text surface cache ?
+
     # --------------------------------------------------------------------------------
     def clear(self):
         """Clear the screen."""
-        self.screen.fill((0, 0, 0))
+        self.fill((0, 0, 0))

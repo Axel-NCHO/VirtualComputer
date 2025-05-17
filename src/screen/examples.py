@@ -1,6 +1,6 @@
 ################################################################################
-import os.path
 import random
+import pygame as pg
 import time
 from pathlib import Path
 from threading import Thread
@@ -9,7 +9,7 @@ from screen import Screen
 from util.colors import hex_to_rgb, random_color_rgb
 
 ################################################################################
-screen = Screen(height=720, width=1280)
+screen = Screen(height=720, width=1280, hz=60, brightness=0.2)
 print(f"The screen has a ratio of {screen.resolution.ratio}")
 
 # --------------------------------------------------------------------------------
@@ -106,7 +106,7 @@ def draw_ellipses():
                                     100,
                                     25)
         filled = False if random.randint(0, 1) < 0.5 else True
-        screen.draw_ellipse(x, y, radius_x, radius_y, random_color_rgb(), fill=filled)
+        screen.draw_ellipse(x, y, radius_x, radius_y, random_color_rgb(), thickness=-1)
         print(f"Drew an ellipse with center {x, y} with radius_x {radius_x} and radius_y {radius_y}")
         time.sleep(5)
 
@@ -147,21 +147,106 @@ def draw_text():
         x, y = (random.randint(0, screen.resolution.width),
                 random.randint(0, screen.resolution.height))
         with_bg_color = False if random.randint(0, 1) < 0.5 else True
-        font = f"{Path(__file__).parent.parent.parent}/resource/font/Urbanist/static/Urbanist-Regular.ttf"
-        print(f"Font {font}")
-        assert os.path.exists(font)
+        font_path = f"{Path(__file__).parent.parent.parent}/resource/font/Urbanist/static/Urbanist-Regular.ttf"
+
+        # Pre-render font for better performance
+        font = pg.font.Font(font_path, 48)
         text = "Here is some \nmultiline text"
         screen.draw_text(text, x, y,
-                         font_path=font,
                          color=random_color_rgb(),
-                         font_size=48,
+                         font=font,
                          line_spacing=1,
                          bg_color=random_color_rgb() if with_bg_color else None)
         print(f"Drew text {text} with font {font}")
         time.sleep(5)
 
+def animation_translate_x():
+    wait_for_screen()
+    while screen.is_on:
+        x, y = 0, 100
+        font_path = f"{Path(__file__).parent.parent.parent}/resource/font/Urbanist/static/Urbanist-Regular.ttf"
+        text = "Here is some \nmultiline text"
+        speed = 800  # pixels per second
 
-Thread(target=draw_text, daemon=True).start()
+        # Pre-render font for better performance
+        font = pg.font.Font(font_path, 48)
+
+        # Animation timing
+        last_time = time.time()
+
+        while x < screen.resolution.width:
+            # Calculate delta time independent of refresh rate
+            current_time = time.time()
+            dt = current_time - last_time
+            last_time = current_time
+
+            # Update position based on real time
+            x += int(speed * dt)
+            if x >= screen.resolution.width:
+                x = 0  # Reset when off-screen
+
+            # Drawing operations
+            if not screen.is_on:
+                break
+            # screen.draw_text(text, x, y,
+            #                  line_spacing=1,
+            #                  color=hex_to_rgb("#ffffff"),
+            #                  font=font)  # Use pre-rendered font
+            screen.draw_ellipse(x, y, 100, 50, hex_to_rgb("#ffffff"), thickness=-1)
+            # screen.draw_ellipse(x, y, 100, 50, hex_to_rgb("#ffffff"))
+            time.sleep(1/screen.refresh_rate)
+            screen.clear()
+
+def animation_ellipse_radius():
+    wait_for_screen()
+    while screen.is_on:
+        rx, ry = 150, 50
+        speedx = 500  # pixels per second
+        speedy = 500  # pixels per second
+        increase_x = False
+        increase_y = True
+
+        # Animation timing
+        last_time = time.time()
+
+        while True:
+            # Calculate delta time independent of refresh rate
+            current_time = time.time()
+            dt = current_time - last_time
+            last_time = current_time
+
+            # Update position based on real time
+            if increase_x:
+                rx += int(speedx * dt)
+                if rx >= 150:
+                    increase_x = False
+            else:
+                rx -= int(speedx * dt)
+                rx = max (50, rx)
+                if rx <= 50:
+                    increase_x = True
+
+            # Update position based on real time
+            if increase_y:
+                ry += int(speedy * dt)
+                if ry >= 150:
+                    increase_y = False
+            else:
+                ry -= int(speedy * dt)
+                ry = max (50, ry)
+                if ry <= 50:
+                    increase_y = True
+
+            # Drawing operations
+            if not screen.is_on:
+                break
+            screen.draw_ellipse(640, 360, rx, ry, hex_to_rgb("#ffffff"), thickness=-1)
+            time.sleep(1/screen.refresh_rate)
+            screen.clear()
+            # screen.draw_ellipse(x, y, 100, 50, hex_to_rgb("#ffffff"))
+
+
+Thread(target=animation_ellipse_radius, daemon=True).start()
 
 screen.power_on()
 
