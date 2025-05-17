@@ -13,7 +13,7 @@ from screen import Screen
 from util.colors import hex_to_rgb, random_color_rgb
 
 ################################################################################
-screen = Screen(height=720, width=1280, hz=1, brightness=1)
+screen = Screen(height=720, width=1280, hz=120, brightness=1)
 print(f"The screen has a ratio of {screen.resolution.ratio}")
 
 # --------------------------------------------------------------------------------
