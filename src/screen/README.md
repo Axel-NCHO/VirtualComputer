@@ -8,6 +8,8 @@ You can see the design specification in [/doc/modelio/virtual_computer](/doc/mod
 using [Modelio](https://www.modelio.org/index.htm).  
 
 ## Usage
+If an Nvidia GPU is detected, the graphics will run on it.  
+If no Nvidia GPU is detected, it will run on the CPU.  
+Minimal setup to be specified later.  
 
-You need an NVIDIA GPU to run the screen. Minimal setup to be specified later.  
 There are example usages that you can run in [examples.py](examples.py).
