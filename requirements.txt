@@ -1,4 +1,4 @@
 pygame
 numpy
-opencv-python
 cupy-cuda12x
+pillow
