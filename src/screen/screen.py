@@ -291,8 +291,8 @@ class Screen:
 
         # Handle completely filled small ellipses
         del ellipse, mask
-        if xp.__name__ != "numpy":
-            xp.get_default_memory_pool().free_all_blocks()
+        # if xp.__name__ != "numpy":
+        #     xp.get_default_memory_pool().free_all_blocks()
 
         return self
 
@@ -327,8 +327,8 @@ class Screen:
 
         # Remove if it performance is an issue
         del distance, distance_px, outer, inner, mask
-        if xp.__name__ != "numpy":
-            xp.get_default_memory_pool().free_all_blocks()
+        # if xp.__name__ != "numpy":
+        #     xp.get_default_memory_pool().free_all_blocks()
 
         return self
 
@@ -426,7 +426,7 @@ class Screen:
             # Convert to GPU arrays
             if xp.__name__ != "numpy":
                 rgb_xp = xp.asarray(rgb_xp, dtype=xp.uint8)
-                alpha_cp = xp.asarray(alpha_xp, dtype=xp.uint8)
+                alpha_xp = xp.asarray(alpha_xp, dtype=xp.uint8)
 
             # Compute dimensions
             w, h = rgb_xp.shape[:2]

@@ -194,7 +194,7 @@ def animation_translate_x():
             #                  line_spacing=1,
             #                  color=hex_to_rgb("#ffffff"),
             #                  bg_color=hex_to_rgb("#ee45ab"),
-            #                  font=font)  # Use pre-rendered font
+            #                  font=font).accept_frame()
             screen.draw_ellipse(x, y, 100, 50, hex_to_rgb("#ffffff"), thickness=-1) \
                   .draw_circle(x, y+200, 100, hex_to_rgb("#ffffff"), thickness=-1) \
                   .draw_rectangle(x, y+400, 100, 100, hex_to_rgb("#ffffff"), fill=True) \
