@@ -1,0 +1,21 @@
+<?xml version="1.0" ?>
+<!--GENERATED FILE, PLEASE DO NOT EDIT!!!--><EXT object="threading" version="4">
+  <OBJECT>
+    <ID name="threading" mc="Standard.Package" uid="c4d164bf-81b9-4cc2-8f92-41f5f4afa392"/>
+    <PID name="python" mc="Standard.Package" uid="d91b91fa-7400-4179-a847-c50bb63d5378"/>
+    <ATTRIBUTES>
+      <ATT name="IsInstantiable">false</ATT>
+      <ATT name="IsAbstract">false</ATT>
+      <ATT name="IsLeaf">false</ATT>
+      <ATT name="IsRoot">false</ATT>
+      <ATT name="Visibility">Public</ATT>
+      <ATT name="Name"><![CDATA[threading]]></ATT>
+      <ATT name="status">1970354901745664</ATT>
+    </ATTRIBUTES>
+    <DEPENDENCIES>
+      <COMP relation="OwnedElement">
+        <COMPID name="Lock" mc="Standard.Class" uid="4db3fc55-31ed-4e2b-a598-a8b571f23bc9"/>
+      </COMP>
+    </DEPENDENCIES>
+  </OBJECT>
+</EXT>
