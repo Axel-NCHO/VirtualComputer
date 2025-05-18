@@ -193,6 +193,7 @@ def animation_translate_x():
             screen.draw_text(text, x, y,
                              line_spacing=1,
                              color=hex_to_rgb("#ffffff"),
+                             bg_color=hex_to_rgb("#ee45ab"),
                              font=font)  # Use pre-rendered font
             # screen.draw_ellipse(x, y, 100, 50, hex_to_rgb("#ffffff"), thickness=-1)
             # screen.draw_circle(x, y, 100, hex_to_rgb("#ffffff"), thickness=-1)

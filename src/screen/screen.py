@@ -7,8 +7,7 @@ from typing import Optional
 from pygame.time import Clock
 
 import pygame as pg
-import numpy as np
-import cupy as cp
+from util.compute_backend import xp
 from pygame import Surface
 
 ################################################################################
@@ -37,7 +36,7 @@ class Screen:
     # --------------------------------------------------------------------------------
     def __init__(self, height, width, hz: int = 60, brightness: float = 1.0):
         self.resolution: Resolution = Resolution(width, height)
-        self.frame_buffer = cp.zeros((width, height, 3), dtype=np.uint8)
+        self.frame_buffer = xp.zeros((width, height, 3), dtype=xp.uint8)
         self.is_on = False
         self.refresh_rate = hz
         pg.init()
@@ -85,10 +84,12 @@ class Screen:
         if self.is_on:
             if self._dirty:
                 if self.brightness != 1.0:
-                    self.bright_frame = cp.clip(self.frame_buffer.astype(np.float16) * self.brightness, 0, 255).astype(np.uint8)
+                    self.bright_frame = xp.clip(self.frame_buffer.astype(xp.float16) * self.brightness, 0,
+                                                255).astype(xp.uint8)
                 else:
                     self.bright_frame = self.frame_buffer.copy()
-                pg.surfarray.blit_array(self.surface, cp.asnumpy(self.bright_frame))
+                pg.surfarray.blit_array(self.surface,
+                                        xp.asnumpy(self.bright_frame) if xp.__name__ != "numpy" else self.bright_frame)
                 with self._dirty_lock:
                     self._dirty = False
             self.screen.blit(self.surface, (0, 0))
@@ -102,11 +103,11 @@ class Screen:
         self.brightness = brightness
 
     # --------------------------------------------------------------------------------
-    def set_pixel(self, x: int, y: int, color: cp.ndarray):
+    def set_pixel(self, x: int, y: int, color: xp.ndarray):
         self.frame_buffer[x, y] = color
 
     # --------------------------------------------------------------------------------
-    def fill(self, color: cp.ndarray):
+    def fill(self, color: xp.ndarray):
         self.frame_buffer[:, :] = color
 
     # --------------------------------------------------------------------------------
@@ -114,7 +115,7 @@ class Screen:
         self.refresh_rate = hz
 
     # --------------------------------------------------------------------------------
-    def draw_line(self, x1: int, y1: int, x2: int, y2: int, color: cp.ndarray):
+    def draw_line(self, x1: int, y1: int, x2: int, y2: int, color: xp.ndarray):
         """Draw a line pixel by pixel using Bresenham's line algorithm"""
         clipped = self._cohen_sutherland_clip(x1, y1, x2, y2, self.resolution.width, self.resolution.height)
         if clipped is None:
@@ -152,7 +153,7 @@ class Screen:
             self._dirty = True
 
     # --------------------------------------------------------------------------------
-    def draw_rectangle(self, x: int, y: int, width: int, height: int, color: cp.ndarray, fill: bool = False):
+    def draw_rectangle(self, x: int, y: int, width: int, height: int, color: xp.ndarray, fill: bool = False):
         # Bounds checking
         if x < 0 or y < 0 or width <= 0 or height <= 0:
             return
@@ -231,7 +232,7 @@ class Screen:
 
     # --------------------------------------------------------------------------------
     def draw_arc(self, cx: int, cy: int, radius: int, angle_start: int, angle_end: int,
-                 color: cp.ndarray):
+                 color: xp.ndarray):
         """Draw an arc by plotting points along a circular path within angle range."""
         if radius <= 0:
             return  # Nothing to draw
@@ -262,12 +263,12 @@ class Screen:
             self._dirty = True
 
     # --------------------------------------------------------------------------------
-    def draw_circle(self, cx: int, cy: int, radius: int, color: cp.ndarray, thickness: int = 1):
+    def draw_circle(self, cx: int, cy: int, radius: int, color: xp.ndarray, thickness: int = 1):
 
         self.draw_ellipse(cx, cy, radius, radius, color, thickness)
 
     # --------------------------------------------------------------------------------
-    def draw_ellipse(self, cx: int, cy: int, rx: int, ry: int, color: cp.ndarray, thickness: int = 1):
+    def draw_ellipse(self, cx: int, cy: int, rx: int, ry: int, color: xp.ndarray, thickness: int = 1):
         """Draw an ellipse using polar coordinates"""
 
         h, w = self.frame_buffer.shape[:2]
@@ -277,10 +278,10 @@ class Screen:
             self._draw_ellipse_outlined(cx, cy, rx, ry, color, thickness, h, w)
 
     # --------------------------------------------------------------------------------
-    def _draw_elipse_filled(self, cx: int, cy: int, rx: int, ry: int, color: cp.ndarray, _h, _w):
+    def _draw_elipse_filled(self, cx: int, cy: int, rx: int, ry: int, color: xp.ndarray, _h, _w):
 
         # Create coordinate grids
-        x, y = cp.indices((_h, _w))
+        x, y = xp.indices((_h, _w))
 
         # Ellipse equation (shifted to center)
         ellipse = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2
@@ -295,23 +296,23 @@ class Screen:
             self._dirty = True
 
     # --------------------------------------------------------------------------------
-    def _draw_ellipse_outlined(self, cx: int, cy: int, rx: int, ry: int, color: cp.ndarray, thickness: int, _h, _w):
+    def _draw_ellipse_outlined(self, cx: int, cy: int, rx: int, ry: int, color: xp.ndarray, thickness: int, _h, _w):
 
         # Create coordinate grids
-        x, y = cp.indices((_h, _w))
+        x, y = xp.indices((_h, _w))
 
         # Calculate normalized distance from ellipse boundary
         # This gives us exact pixel distances from the edge
-        distance = cp.sqrt((x - cx) ** 2 * ry ** 2 + (y - cy) ** 2 * rx ** 2) - (rx * ry)
+        distance = xp.sqrt((x - cx) ** 2 * ry ** 2 + (y - cy) ** 2 * rx ** 2) - (rx * ry)
 
         # Convert distance to pixels
-        distance_px = distance / cp.clip(cp.sqrt(rx ** 2 * ((y - cy) / ry) ** 2 + ry ** 2 * ((x - cx) / rx) ** 2),
+        distance_px = distance / xp.clip(xp.sqrt(rx ** 2 * ((y - cy) / ry) ** 2 + ry ** 2 * ((x - cx) / rx) ** 2),
                                          1e-6, None)
 
         # Create mask for outline
         if thickness <= 1:
             # For thin outlines, use exact boundary
-            mask = cp.abs(distance_px) <= 0.5
+            mask = xp.abs(distance_px) <= 0.5
         else:
             # For thicker outlines, create band
             outer = distance_px <= (thickness / 2)
@@ -336,7 +337,7 @@ class Screen:
 
     # --------------------------------------------------------------------------------
     def draw_quadratic_bezier(self, p0x: int, p0y: int, p1x: int, p1y: int, p2x: int, p2y: int,
-                              color: cp.ndarray):
+                              color: xp.ndarray):
         """Draw a quadratic Bézier curve (P0, P1, P2) with smooth interpolation"""
         t = 0.0
         prev_x, prev_y = self._bezier_quadratic(t, p0x, p0y, p1x, p1y, p2x, p2y)
@@ -388,11 +389,11 @@ class Screen:
 
     # --------------------------------------------------------------------------------
     def draw_text(self, text: str, x: int, y: int,
-                  color: cp.ndarray,
+                  color: xp.ndarray,
                   antialias: bool = True,
                   line_spacing: int = 2,
                   font: Optional[pg.font.Font] = None,
-                  bg_color: Optional[cp.ndarray] = None):
+                  bg_color: Optional[xp.ndarray] = None):
         """Efficiently draw multiline text at (x, y) using batch transfer to GPU (W, H, 3 layout)."""
         lines = text.expandtabs(4).split('\n')
         current_y = y
@@ -402,8 +403,10 @@ class Screen:
                 current_y += font.get_linesize() + line_spacing
                 continue
 
-            color_cpu = tuple(color.get().tolist())
-            bg_color_cpu = tuple(bg_color.get().tolist()) if bg_color is not None else None
+            color_cpu = tuple(color.get().tolist()) if xp.__name__ != "numpy" \
+                else tuple(color.tolist())
+            bg_color_cpu = tuple(bg_color.get().tolist()) if xp.__name__ != "numpy" and bg_color is not None \
+                else tuple(bg_color.tolist())
 
             # Get or render text surface
             surface = self.get_cached_text((line, antialias, color_cpu, bg_color_cpu, font))
@@ -415,15 +418,16 @@ class Screen:
 
             # Get raw image and alpha channel from Pygame surface (shape: (W, H, 3) and (W, H))
             surface = surface.convert_alpha()
-            rgb_np = pg.surfarray.array3d(surface)  # shape: (W, H, 3)
-            alpha_np = pg.surfarray.array_alpha(surface)  # shape: (W, H)
+            rgb_xp = pg.surfarray.array3d(surface)  # shape: (W, H, 3)
+            alpha_xp = pg.surfarray.array_alpha(surface)  # shape: (W, H)
 
             # Convert to GPU arrays
-            rgb_cp = cp.asarray(rgb_np, dtype=cp.uint8)
-            alpha_cp = cp.asarray(alpha_np, dtype=cp.uint8)
+            if xp.__name__ != "numpy":
+                rgb_xp = xp.asarray(rgb_xp, dtype=xp.uint8)
+                alpha_cp = xp.asarray(alpha_xp, dtype=xp.uint8)
 
             # Compute dimensions
-            w, h = rgb_cp.shape[:2]
+            w, h = rgb_xp.shape[:2]
             max_x = min(self.resolution.width, x + w)
             max_y = min(self.resolution.height, current_y + h)
             draw_width = max_x - x
@@ -433,15 +437,15 @@ class Screen:
                 continue
 
             # Slice only visible area
-            rgb_cp = rgb_cp[:draw_width, :draw_height]
-            alpha_cp = alpha_cp[:draw_width, :draw_height]
+            rgb_xp = rgb_xp[:draw_width, :draw_height]
+            alpha_xp = alpha_xp[:draw_width, :draw_height]
 
             # Alpha mask
-            mask = alpha_cp > 0
+            mask = alpha_xp > 0
 
             # Apply masked text
             target_slice = self.frame_buffer[x:max_x, current_y:max_y]  # Shape: (W, H, 3)
-            target_slice[mask] = rgb_cp[mask]
+            target_slice[mask] = rgb_xp[mask]
 
             current_y += height + line_spacing
 
@@ -463,4 +467,4 @@ class Screen:
     # --------------------------------------------------------------------------------
     def clear(self):
         """Clear the screen."""
-        self.fill(cp.array([0, 0, 0]))
+        self.fill(xp.array([0, 0, 0]))
