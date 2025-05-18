@@ -1,9 +1,9 @@
 ################################################################################
 import numpy as np
 
-# --------------------------------------------------------------------------------
-# Run on GPU if available. Else, run on CPU.
+################################################################################
 def get_compute_backend():
+    """Returns Cupy module if an Nvidia GPU is detected. If not, the Numpy module is returned."""
     try:
         import cupy as cp
         if cp.cuda.runtime.getDeviceCount() > 0:
@@ -16,5 +16,3 @@ def get_compute_backend():
         print("CuPy or Cuda not installed. Falling back to CPU.")
         return np
 xp = get_compute_backend()
-
-# --------------------------------------------------------------------------------

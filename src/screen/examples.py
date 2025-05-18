@@ -252,9 +252,20 @@ def animation_ellipse_radius():
             screen.clear()
             # screen.draw_ellipse(x, y, 100, 50, hex_to_rgb("#ffffff"))
 
+# --------------------------------------------------------------------------------
+def screenshot():
+    wait_for_screen()
+    if screen.is_on:
+        time.sleep(5)
+        print("Taking screenshot...")
+        screen.export_frame(Path(__file__).parent / "generated/screenshot.png")
+        print(f"Screenshot saved to /src/screen/generated/screenshot.png")
+
+
 ################################################################################
 # Run screen commands in a separate thread
 Thread(target=animation_translate_x, daemon=True).start()
+Thread(target=screenshot, daemon=True).start()
 
 # This is a blocking call
 screen.power_on()

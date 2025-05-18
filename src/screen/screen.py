@@ -1,6 +1,7 @@
 ################################################################################
 import math
 from fractions import Fraction
+from os import PathLike
 from threading import Lock
 from typing import Optional
 
@@ -325,7 +326,7 @@ class Screen:
 
         self.frame_buffer[mask] = color
 
-        # Remove if it performance is an issue
+        # Remove if performance is an issue
         del distance, distance_px, outer, inner, mask
         # if xp.__name__ != "numpy":
         #     xp.get_default_memory_pool().free_all_blocks()
@@ -463,14 +464,18 @@ class Screen:
             surface = font.render(text, aliasing, color, bg_color)
             self.cached_texts[key] = surface
             return surface
-        # TODO: Maybe fix a size limit for the text surface cache ?
+        # TODO: Maybe fix a size limit for the text surface cache ?0
 
     # --------------------------------------------------------------------------------
     def clear(self):
         """Clear the screen."""
         self.fill(xp.array([0, 0, 0]))
 
-
+    # --------------------------------------------------------------------------------
     def accept_frame(self):
         with self._dirty_lock:
             self._dirty = True
+
+    # --------------------------------------------------------------------------------
+    def export_frame(self, abs_path: str | PathLike[str]):
+        pg.image.save(self.screen, abs_path)

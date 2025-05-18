@@ -12,3 +12,6 @@ __pycache__/
 **/modelio/**/blobs/
 **/modelio/**/XMI/
 stamp.dat
+
+# generated
+**/generated/
