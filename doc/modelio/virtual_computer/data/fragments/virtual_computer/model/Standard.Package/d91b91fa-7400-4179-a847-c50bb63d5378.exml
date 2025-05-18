@@ -15,6 +15,8 @@
     <DEPENDENCIES>
       <COMP relation="OwnedElement">
         <COMPID name="numpy" mc="Standard.Package" uid="0a24efb0-e9f0-4b86-9773-e04f4b39ecd3"/>
+        <COMPID name="pygame" mc="Standard.Package" uid="522ca48b-40f3-4eca-b24c-9c644c1fa4b7"/>
+        <COMPID name="threading" mc="Standard.Package" uid="c4d164bf-81b9-4cc2-8f92-41f5f4afa392"/>
       </COMP>
     </DEPENDENCIES>
   </OBJECT>

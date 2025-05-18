@@ -81,6 +81,7 @@ class Screen:
     def power_off(self):
         self.is_on = False
         pg.quit()
+        self.cached_texts.clear()
 
     # --------------------------------------------------------------------------------
     def update(self):
@@ -102,7 +103,7 @@ class Screen:
                 print(f"FPS: {self.clock.get_fps():.1f}")
 
     # --------------------------------------------------------------------------------
-    def set_brightness(self, brightness: float):
+    def set_backlight(self, brightness: float):
         self.brightness = brightness
 
     # --------------------------------------------------------------------------------
@@ -394,7 +395,7 @@ class Screen:
     def draw_text(self, text: str, x: int, y: int,
                   color: xp.ndarray,
                   antialias: bool = True,
-                  line_spacing: int = 2,
+                  line_spacing: int = 1,
                   font: Optional[pg.font.Font] = None,
                   bg_color: Optional[xp.ndarray] = None) -> "Screen":
         """Efficiently draw multiline text at (x, y) using batch transfer to GPU (W, H, 3 layout)."""
