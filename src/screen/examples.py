@@ -190,13 +190,15 @@ def animation_translate_x():
             # Drawing operations
             if not screen.is_on:
                 break
-            screen.draw_text(text, x, y,
-                             line_spacing=1,
-                             color=hex_to_rgb("#ffffff"),
-                             bg_color=hex_to_rgb("#ee45ab"),
-                             font=font)  # Use pre-rendered font
-            # screen.draw_ellipse(x, y, 100, 50, hex_to_rgb("#ffffff"), thickness=-1)
-            # screen.draw_circle(x, y, 100, hex_to_rgb("#ffffff"), thickness=-1)
+            # screen.draw_text(text, x, y,
+            #                  line_spacing=1,
+            #                  color=hex_to_rgb("#ffffff"),
+            #                  bg_color=hex_to_rgb("#ee45ab"),
+            #                  font=font)  # Use pre-rendered font
+            screen.draw_ellipse(x, y, 100, 50, hex_to_rgb("#ffffff"), thickness=-1) \
+                  .draw_circle(x, y+200, 100, hex_to_rgb("#ffffff"), thickness=-1) \
+                  .draw_rectangle(x, y+400, 100, 100, hex_to_rgb("#ffffff"), fill=True) \
+                  .accept_frame()
             # screen.draw_arc(x, y, 100, 0, 157, hex_to_rgb("#ffffff"))
             time.sleep(1/60)
             screen.clear()
@@ -204,7 +206,7 @@ def animation_translate_x():
 # --------------------------------------------------------------------------------
 def animation_ellipse_radius():
     wait_for_screen()
-    while screen.is_on:
+    if screen.is_on:
         rx, ry = 150, 50
         speedx = 500  # pixels per second
         speedy = 500  # pixels per second

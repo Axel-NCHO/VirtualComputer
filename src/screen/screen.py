@@ -37,6 +37,8 @@ class Screen:
     def __init__(self, height, width, hz: int = 60, brightness: float = 1.0):
         self.resolution: Resolution = Resolution(width, height)
         self.frame_buffer = xp.zeros((width, height, 3), dtype=xp.uint8)
+        _h, _w = self.frame_buffer.shape[:2]
+        self._x_grid, self._y_grid = xp.indices((_h, _w))
         self.is_on = False
         self.refresh_rate = hz
         pg.init()
@@ -115,11 +117,11 @@ class Screen:
         self.refresh_rate = hz
 
     # --------------------------------------------------------------------------------
-    def draw_line(self, x1: int, y1: int, x2: int, y2: int, color: xp.ndarray):
+    def draw_line(self, x1: int, y1: int, x2: int, y2: int, color: xp.ndarray) -> "Screen":
         """Draw a line pixel by pixel using Bresenham's line algorithm"""
         clipped = self._cohen_sutherland_clip(x1, y1, x2, y2, self.resolution.width, self.resolution.height)
         if clipped is None:
-            return  # Line completely outside
+            return self  # Line completely outside
 
         x1, y1, x2, y2 = clipped
         dx = abs(x2 - x1)
@@ -149,14 +151,15 @@ class Screen:
                 y += sy
 
         self.set_pixel(x, y, color)  # Draw final point
-        with self._dirty_lock:
-            self._dirty = True
+
+        return self
 
     # --------------------------------------------------------------------------------
-    def draw_rectangle(self, x: int, y: int, width: int, height: int, color: xp.ndarray, fill: bool = False):
+    def draw_rectangle(self, x: int, y: int, width: int, height: int, color: xp.ndarray,
+                       fill: bool = False) -> "Screen":
         # Bounds checking
         if x < 0 or y < 0 or width <= 0 or height <= 0:
-            return
+            return self
 
         # Clip start and end coordinates
         x_start = max(0, x)
@@ -172,8 +175,7 @@ class Screen:
             self.draw_line(x, y, x, y + height - 1, color)  # Left
             self.draw_line(x + width - 1, y, x + width - 1, y + height - 1, color)  # Right
 
-        with self._dirty_lock:
-            self._dirty = True
+        return self
 
     # --------------------------------------------------------------------------------
     def _compute_out_code(self, x, y, width, height):
@@ -232,10 +234,10 @@ class Screen:
 
     # --------------------------------------------------------------------------------
     def draw_arc(self, cx: int, cy: int, radius: int, angle_start: int, angle_end: int,
-                 color: xp.ndarray):
+                 color: xp.ndarray) -> "Screen":
         """Draw an arc by plotting points along a circular path within angle range."""
         if radius <= 0:
-            return  # Nothing to draw
+            return self  # Nothing to draw
 
         x_max, y_max = self.resolution.width, self.resolution.height
 
@@ -259,32 +261,27 @@ class Screen:
             if 0 <= x < x_max and 0 <= y < y_max:
                 self.set_pixel(x, y, color)
 
-        with self._dirty_lock:
-            self._dirty = True
+        return self
 
     # --------------------------------------------------------------------------------
-    def draw_circle(self, cx: int, cy: int, radius: int, color: xp.ndarray, thickness: int = 1):
+    def draw_circle(self, cx: int, cy: int, radius: int, color: xp.ndarray, thickness: int = 1) -> "Screen":
 
-        self.draw_ellipse(cx, cy, radius, radius, color, thickness)
+        return self.draw_ellipse(cx, cy, radius, radius, color, thickness)
 
     # --------------------------------------------------------------------------------
-    def draw_ellipse(self, cx: int, cy: int, rx: int, ry: int, color: xp.ndarray, thickness: int = 1):
+    def draw_ellipse(self, cx: int, cy: int, rx: int, ry: int, color: xp.ndarray, thickness: int = 1) -> "Screen":
         """Draw an ellipse using polar coordinates"""
 
-        h, w = self.frame_buffer.shape[:2]
         if thickness < 0:
-            self._draw_elipse_filled(cx, cy, rx, ry, color, h, w)
+            return self._draw_elipse_filled(cx, cy, rx, ry, color)
         else:
-            self._draw_ellipse_outlined(cx, cy, rx, ry, color, thickness, h, w)
+            return self._draw_ellipse_outlined(cx, cy, rx, ry, color, thickness)
 
     # --------------------------------------------------------------------------------
-    def _draw_elipse_filled(self, cx: int, cy: int, rx: int, ry: int, color: xp.ndarray, _h, _w):
-
-        # Create coordinate grids
-        x, y = xp.indices((_h, _w))
+    def _draw_elipse_filled(self, cx: int, cy: int, rx: int, ry: int, color: xp.ndarray) -> "Screen":
 
         # Ellipse equation (shifted to center)
-        ellipse = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2
+        ellipse = ((self._x_grid - cx) / rx) ** 2 + ((self._y_grid - cy) / ry) ** 2
 
         # Create mask (automatically handles out-of-bounds)
         mask = ellipse <= 1.0
@@ -292,21 +289,24 @@ class Screen:
         # Apply color to all channels
         self.frame_buffer[mask] = color
 
-        with self._dirty_lock:
-            self._dirty = True
+        # Handle completely filled small ellipses
+        del ellipse, mask
+        if xp.__name__ != "numpy":
+            xp.get_default_memory_pool().free_all_blocks()
+
+        return self
 
     # --------------------------------------------------------------------------------
-    def _draw_ellipse_outlined(self, cx: int, cy: int, rx: int, ry: int, color: xp.ndarray, thickness: int, _h, _w):
+    def _draw_ellipse_outlined(self, cx: int, cy: int, rx: int, ry: int, color: xp.ndarray,
+                               thickness: int) -> "Screen":
 
-        # Create coordinate grids
-        x, y = xp.indices((_h, _w))
 
         # Calculate normalized distance from ellipse boundary
         # This gives us exact pixel distances from the edge
-        distance = xp.sqrt((x - cx) ** 2 * ry ** 2 + (y - cy) ** 2 * rx ** 2) - (rx * ry)
+        distance = xp.sqrt((self._x_grid - cx) ** 2 * ry ** 2 + (self._y_grid - cy) ** 2 * rx ** 2) - (rx * ry)
 
         # Convert distance to pixels
-        distance_px = distance / xp.clip(xp.sqrt(rx ** 2 * ((y - cy) / ry) ** 2 + ry ** 2 * ((x - cx) / rx) ** 2),
+        distance_px = distance / xp.clip(xp.sqrt(rx ** 2 * ((self._y_grid - cy) / ry) ** 2 + ry ** 2 * ((self._x_grid - cx) / rx) ** 2),
                                          1e-6, None)
 
         # Create mask for outline
@@ -325,8 +325,12 @@ class Screen:
 
         self.frame_buffer[mask] = color
 
-        with self._dirty_lock:
-            self._dirty = True
+        # Remove if it performance is an issue
+        del distance, distance_px, outer, inner, mask
+        if xp.__name__ != "numpy":
+            xp.get_default_memory_pool().free_all_blocks()
+
+        return self
 
     # --------------------------------------------------------------------------------
     @staticmethod
@@ -337,7 +341,7 @@ class Screen:
 
     # --------------------------------------------------------------------------------
     def draw_quadratic_bezier(self, p0x: int, p0y: int, p1x: int, p1y: int, p2x: int, p2y: int,
-                              color: xp.ndarray):
+                              color: xp.ndarray) -> "Screen":
         """Draw a quadratic Bézier curve (P0, P1, P2) with smooth interpolation"""
         t = 0.0
         prev_x, prev_y = self._bezier_quadratic(t, p0x, p0y, p1x, p1y, p2x, p2y)
@@ -356,8 +360,7 @@ class Screen:
             prev_x, prev_y = next_x, next_y
             t = next_t
 
-        with self._dirty_lock:
-            self._dirty = True
+        return self
 
     # --------------------------------------------------------------------------------
     @staticmethod
@@ -367,7 +370,7 @@ class Screen:
         return int(x), int(y)
 
     # --------------------------------------------------------------------------------
-    def draw_cubic_bezier(self, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color):
+    def draw_cubic_bezier(self, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, color) -> "Screen":
         """Draw a cubic Bézier curve (P0, P1, P2, P3) with smooth interpolation"""
         t = 0.0
         prev_x, prev_y = self._bezier_cubic(t, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y)
@@ -384,8 +387,7 @@ class Screen:
             prev_x, prev_y = next_x, next_y
             t = next_t
 
-        with self._dirty_lock:
-            self._dirty = True
+        return self
 
     # --------------------------------------------------------------------------------
     def draw_text(self, text: str, x: int, y: int,
@@ -393,7 +395,7 @@ class Screen:
                   antialias: bool = True,
                   line_spacing: int = 2,
                   font: Optional[pg.font.Font] = None,
-                  bg_color: Optional[xp.ndarray] = None):
+                  bg_color: Optional[xp.ndarray] = None) -> "Screen":
         """Efficiently draw multiline text at (x, y) using batch transfer to GPU (W, H, 3 layout)."""
         lines = text.expandtabs(4).split('\n')
         current_y = y
@@ -449,8 +451,7 @@ class Screen:
 
             current_y += height + line_spacing
 
-        with self._dirty_lock:
-            self._dirty = True
+        return self
 
     # --------------------------------------------------------------------------------
     def get_cached_text(self,
@@ -468,3 +469,8 @@ class Screen:
     def clear(self):
         """Clear the screen."""
         self.fill(xp.array([0, 0, 0]))
+
+
+    def accept_frame(self):
+        with self._dirty_lock:
+            self._dirty = True
