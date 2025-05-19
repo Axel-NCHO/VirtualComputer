@@ -4,10 +4,10 @@ from fractions import Fraction
 from os import PathLike
 from threading import Lock
 from typing import Optional
-
 from pygame.time import Clock
-
 import pygame as pg
+from device.input_device import InputDevice
+from device.keyboard import Keyboard
 from util.compute_backend import xp
 from pygame import Surface
 
@@ -51,6 +51,9 @@ class Screen:
         self._dirty = False
         self.cached_texts: dict[tuple[str, bool, tuple, tuple, pg.font.Font], pg.Surface] = {}
         self._dirty_lock = Lock()
+        self.input_devices: dict[str, InputDevice] = {
+            "keyboard": Keyboard()
+        }
 
     # --------------------------------------------------------------------------------
     def power_on(self):
@@ -66,16 +69,23 @@ class Screen:
     # --------------------------------------------------------------------------------
     def _run_event_loop(self):
         while self.is_on:
-            for event in pg.event.get():
-                if event.type == pg.QUIT:
-                    self.power_off()
-                    break
+            self.handle_events()
 
+            # The screen my have been turned off
             if not self.is_on:
                 break
 
             self.update()
             self.clock.tick(self.refresh_rate)
+
+    # --------------------------------------------------------------------------------
+    def handle_events(self):
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                self.power_off()
+
+            if event.type == pg.KEYDOWN:
+                self.input_devices["keyboard"].write(pg.key.name(event.key))
 
     # --------------------------------------------------------------------------------
     def power_off(self):
@@ -107,12 +117,14 @@ class Screen:
         self.brightness = brightness
 
     # --------------------------------------------------------------------------------
-    def set_pixel(self, x: int, y: int, color: xp.ndarray):
+    def set_pixel(self, x: int, y: int, color: xp.ndarray) -> "Screen":
         self.frame_buffer[x, y] = color
+        return self
 
     # --------------------------------------------------------------------------------
-    def fill(self, color: xp.ndarray):
+    def fill(self, color: xp.ndarray) -> "Screen":
         self.frame_buffer[:, :] = color
+        return self
 
     # --------------------------------------------------------------------------------
     def set_refresh_rate(self, hz: int):
@@ -397,61 +409,60 @@ class Screen:
                   antialias: bool = True,
                   line_spacing: int = 1,
                   font: Optional[pg.font.Font] = None,
-                  bg_color: Optional[xp.ndarray] = None) -> "Screen":
+                  bg_color: Optional[xp.ndarray] = None,
+                  next_write_position: Optional[list[int]] = None) -> "Screen":
         """Efficiently draw multiline text at (x, y) using batch transfer to GPU (W, H, 3 layout)."""
-        lines = text.expandtabs(4).split('\n')
         current_y = y
+        if not text.strip():
+            current_y += font.get_linesize() + line_spacing
+            return self
 
-        for line in lines:
-            if not line.strip():
-                current_y += font.get_linesize() + line_spacing
-                continue
+        color_cpu = tuple(color.get().tolist()) if xp.__name__ != "numpy" \
+            else tuple(color.tolist())
+        bg_color_cpu = tuple(bg_color.get().tolist()) if xp.__name__ != "numpy" and bg_color is not None \
+            else tuple(bg_color.tolist()) if bg_color is not None else None
 
-            color_cpu = tuple(color.get().tolist()) if xp.__name__ != "numpy" \
-                else tuple(color.tolist())
-            bg_color_cpu = tuple(bg_color.get().tolist()) if xp.__name__ != "numpy" and bg_color is not None \
-                else tuple(bg_color.tolist())
+        # Get or render text surface
+        surface = self.get_cached_text((text, antialias, color_cpu, bg_color_cpu, font))
+        width, height = surface.get_size()
 
-            # Get or render text surface
-            surface = self.get_cached_text((line, antialias, color_cpu, bg_color_cpu, font))
-            width, height = surface.get_size()
-
-            if current_y + height < 0 or current_y >= self.resolution.height:
-                current_y += height + line_spacing
-                continue
-
-            # Get raw image and alpha channel from Pygame surface (shape: (W, H, 3) and (W, H))
-            surface = surface.convert_alpha()
-            rgb_xp = pg.surfarray.array3d(surface)  # shape: (W, H, 3)
-            alpha_xp = pg.surfarray.array_alpha(surface)  # shape: (W, H)
-
-            # Convert to GPU arrays
-            if xp.__name__ != "numpy":
-                rgb_xp = xp.asarray(rgb_xp, dtype=xp.uint8)
-                alpha_xp = xp.asarray(alpha_xp, dtype=xp.uint8)
-
-            # Compute dimensions
-            w, h = rgb_xp.shape[:2]
-            max_x = min(self.resolution.width, x + w)
-            max_y = min(self.resolution.height, current_y + h)
-            draw_width = max_x - x
-            draw_height = max_y - current_y
-            if draw_width <= 0 or draw_height <= 0:
-                current_y += height + line_spacing
-                continue
-
-            # Slice only visible area
-            rgb_xp = rgb_xp[:draw_width, :draw_height]
-            alpha_xp = alpha_xp[:draw_width, :draw_height]
-
-            # Alpha mask
-            mask = alpha_xp > 0
-
-            # Apply masked text
-            target_slice = self.frame_buffer[x:max_x, current_y:max_y]  # Shape: (W, H, 3)
-            target_slice[mask] = rgb_xp[mask]
-
+        if current_y + height < 0 or current_y >= self.resolution.height:
             current_y += height + line_spacing
+            return self
+
+        # Get raw image and alpha channel from Pygame surface (shape: (W, H, 3) and (W, H))
+        surface = surface.convert_alpha()
+        rgb_xp = pg.surfarray.array3d(surface)  # shape: (W, H, 3)
+        alpha_xp = pg.surfarray.array_alpha(surface)  # shape: (W, H)
+
+        # Convert to GPU arrays
+        if xp.__name__ != "numpy":
+            rgb_xp = xp.asarray(rgb_xp, dtype=xp.uint8)
+            alpha_xp = xp.asarray(alpha_xp, dtype=xp.uint8)
+
+        # Compute dimensions
+        w, h = rgb_xp.shape[:2]
+        max_x = min(self.resolution.width, x + w)
+        max_y = min(self.resolution.height, current_y + h)
+        draw_width = max_x - x
+        draw_height = max_y - current_y
+        if draw_width <= 0 or draw_height <= 0:
+            current_y += height + line_spacing
+            return self
+
+        # Slice only visible area
+        rgb_xp = rgb_xp[:draw_width, :draw_height]
+        alpha_xp = alpha_xp[:draw_width, :draw_height]
+
+        # Alpha mask
+        mask = alpha_xp > 0
+
+        # Apply masked text
+        target_slice = self.frame_buffer[x:max_x, current_y:max_y]  # Shape: (W, H, 3)
+        target_slice[mask] = rgb_xp[mask]
+
+        if next_write_position is not None:
+            next_write_position[:] = [max_x+1, current_y]
 
         return self
 

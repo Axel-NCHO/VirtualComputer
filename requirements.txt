@@ -2,3 +2,4 @@ pygame
 numpy
 cupy-cuda12x
 pillow
+keyboard
