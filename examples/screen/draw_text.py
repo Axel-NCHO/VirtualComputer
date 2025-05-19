@@ -24,7 +24,7 @@ def draw_text():
         x, y = (random.randint(0, screen.resolution.width),
                 random.randint(0, screen.resolution.height))
         with_bg_color = False if random.randint(0, 1) < 0.5 else True
-        font_path = f"{Path(__file__).parent.parent.parent}/resource/font/Urbanist/static/Urbanist-Regular.ttf"
+        font_path = f"{Path(__file__).parent.parent}/resource/font/Urbanist/static/Urbanist-Regular.ttf"
 
         # Pre-render font for better performance
         font = pg.font.Font(font_path, 48)
