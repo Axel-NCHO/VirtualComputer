@@ -9,8 +9,9 @@ using [Modelio](https://www.modelio.org/index.htm).
 
 ## Usage
 
-If an Nvidia GPU is detected, the graphics will run on it.  
-If no Nvidia GPU is detected, it will run on the CPU.  
-Minimal setup to be specified later.  
+Tested on Windows 11 and Ubuntu 24.04.2 LTS.  
+Uses the GPU if and the  [CUDA Toolkit](https://developer.nvidia.com/cuda-downloads) is correctly installed.  
+Uses the CPU if the previous requirements are not satisfied.  
+Minimal setup to be specified later.   
 
 Run [main.py](main.py).

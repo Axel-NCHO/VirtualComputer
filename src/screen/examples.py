@@ -3,6 +3,7 @@
 ################################################################################
 # Examples of how do draw on the screen and make animations
 ################################################################################
+import os
 import random
 import pygame as pg
 import time
@@ -258,7 +259,9 @@ def screenshot():
     if screen.is_on:
         time.sleep(5)
         print("Taking screenshot...")
-        screen.export_frame(Path(__file__).parent / "generated/screenshot.png")
+        dir_ = Path(__file__).parent / "generated"
+        os.makedirs(dir_, exist_ok=True)
+        screen.export_frame(dir_ / "screenshot.png")
         print(f"Screenshot saved to /src/screen/generated/screenshot.png")
 
 
