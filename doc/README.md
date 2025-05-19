@@ -11,7 +11,7 @@ src/
 ├── screen/  
 │   └── screen.py               # Stores and displays raw pixels  
 │  
-├── devices/  
+├── device/  
 │   ├── keyboard.py             # Simulated keyboard (event queue or polling)  
 │   ├── disk.py                 # Simulated disk or storage  
 │   └── timer.py                # Optional clock or interrupt time  
@@ -29,7 +29,7 @@ src/
 │   └── syscalls.py             # Print text, read key, etc.  
 │  
 ├── assembler/  
-│   └── assembler.py            # Turns assembly into bytecode for your VM  
+│   └── assembler.py            # Turns assembly into bytecode for the VM  
 │  
 ├── util/  
 │   ├── colors.py               # Color utilities  
